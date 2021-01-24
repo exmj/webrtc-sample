@@ -1,0 +1,78 @@
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+span {
+  position: fixed;
+}
+</style>
+<body>
+  <input id="name" placeholder="please input your name"></body>
+</body>
+<script type="text/javascript" src="https://cdn.webrtc.ecl.ntt.com/skyway-latest.js"></script>
+<script defer>
+const KEY = "f5e3b618-587f-4855-a70d-dd3851323156";
+const ROOM = "webrtc-sample";
+
+async function init() {
+  const peer = await new Promise(r => {
+    const peer = new Peer({ key: KEY });
+    peer.on("open", () => r(peer));
+  });
+
+  const room = peer.joinRoom(ROOM, {});
+
+  let previousX = 0;
+  let previousY = 0;
+  let currentX = 0;
+  let currentY = 0;
+
+  document.body.addEventListener("mousemove", e => {
+    const { clientX, clientY } = e;
+
+    currentX = clientX;
+    currentY = clientY;
+  });
+
+  const nameEl = document.getElementById("name");
+
+  setInterval(() => {
+    if (previousX === currentX && previousY === currentY) {
+      return;
+    }
+
+    room.send({ peerId: peer.id, x: currentX, y: currentY, name: nameEl.value });
+
+    previousX = currentX;
+    previousY = currentY;
+  }, 200);
+
+
+  room.on("data", ({ data }) => {
+    const { peerId, x, y, name } = data;
+
+    let pointerEl = document.getElementById(peerId);
+
+    if (!pointerEl) {
+      pointerEl = document.createElement("span");
+      document.body.append(pointerEl);
+      pointerEl.id = peerId;
+      const image = document.createElement("img");
+      image.src = "pointer.svg";
+      pointerEl.append(image);
+      const label = document.createElement("label");
+      pointerEl.append(label);
+    }
+
+    pointerEl.querySelector("label").textContent = name;
+    pointerEl.style.left = `${x}px`;
+    pointerEl.style.top = `${y}px`;
+  });
+}
+
+init();
+</script>
